@@ -3,10 +3,10 @@
  * Beach Town Container
  *
  * This template creates a full-width container with an ACF background image,
- * an extra large dynamically sized title overlay, and a button positioned near the bottom.
+ * and MAXIMUM SIZE title text (up to 2 lines).
  *
  * @package Nick
- * @version 1.8
+ * @version 2.1
  * @location templates-parts/flexible-content/beach-town-container.php
  */
 
@@ -36,6 +36,26 @@ if (empty($title_text)) {
     $title_text = get_sub_field('title_text');
 }
 
+// Process title text to create line breaks for two-word beach names
+if (!empty($title_text)) {
+    // Check if title contains multiple words
+    $words = explode(' ', $title_text);
+    if (count($words) >= 2) {
+        // For beach names like "Rosemary Beach" or "Blue Mountain Beach"
+        // Add a line break after the first word (or second word for 3+ word names)
+        $break_position = count($words) > 2 ? 2 : 1;
+        $first_part = array_slice($words, 0, $break_position);
+        $second_part = array_slice($words, $break_position);
+        
+        $title_text_formatted = implode(' ', $first_part) . '<br>' . implode(' ', $second_part);
+    } else {
+        // For single word names like "Seagrove"
+        $title_text_formatted = $title_text;
+    }
+} else {
+    $title_text_formatted = '';
+}
+
 // Default values if fields are empty
 $background_style = '';
 if ($background_image && isset($background_image['url'])) {
@@ -53,7 +73,7 @@ $unique_id = 'beach-town-' . uniqid();
     <div class="container-inner">
         <?php if ($title_text) : ?>
         <div class="beach-town-title-wrapper">
-            <h2 class="beach-town-title fit-text"><?php echo esc_html($title_text); ?></h2>
+            <h2 class="beach-town-title fit-text"><?php echo wp_kses_post($title_text_formatted); ?></h2>
         </div>
         <?php endif; ?>
         
@@ -85,43 +105,55 @@ $unique_id = 'beach-town-' . uniqid();
     
     .beach-town-title-wrapper {
         width: 100%;
+        height: 65%; /* Changed from fixed 400px to 65% of container height */
         text-align: center;
         display: flex;
         justify-content: center;
         align-items: center;
-        height: 300px; /* Using fixed height for title area */
-        padding: 0 20px;
+        padding: 0;
+        margin: 0;
+        margin-top: -20px; /* Negative margin to use more vertical space */
     }
     
     .beach-town-title {
         color: #ffffff;
-		opacity: 0.85;
+        opacity: 0.85;
         font-weight: 900;
-         text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.4); 
+        text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.4); 
         margin: 0;
         width: 100%;
         text-transform: uppercase;
         letter-spacing: 1px;
-        line-height: 0.9;
+        line-height: 0.8; /* Tighter line height for more space */
         text-align: center;
         display: inline-block;
         padding: 0;
+        white-space: normal; /* Allow wrapping but preserve center alignment */
+    }
+    
+    /* For two-line titles, override the white-space */
+    .beach-town-title.has-break {
+        white-space: normal;
     }
     
     .beach-town-button {
         display: inline-block;
-        padding: 12px 24px;
-        background-color: #6ec0b0; /* your actual main color as fallback */
+        padding: 18px 36px;
+        background-color: #6ec0b0;
         color: #ffffff;
         text-decoration: none;
-        border-radius: 4px;
-        font-weight: bold;
-        transition: opacity 0.3s ease;
+        border-radius: 3px;
+        font-weight: 700;
+        font-size: 2rem;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
         margin-bottom: 40px;
+        margin-top: -50px;
     }
-    
+
     .beach-town-button:hover {
-        opacity: 0.9;
+        transform: scale(1.05);
+   
     }
 </style>
 
@@ -136,34 +168,43 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (!titleElement || !titleWrapper) return;
     
-    function resizeText() {
-        const containerWidth = titleWrapper.offsetWidth - 40; // Accounting for padding
-        const containerHeight = titleWrapper.offsetHeight;
-        
-        // Start with a very large font size
-        let fontSize = 250; // Start much larger
-        titleElement.style.fontSize = fontSize + 'px';
-        
-        // Reduce font size until text fits within container width
-        while ((titleElement.scrollWidth > containerWidth || titleElement.scrollHeight > containerHeight) && fontSize > 40) {
-            fontSize -= 2; // Reduce by larger increments for efficiency
-            titleElement.style.fontSize = fontSize + 'px';
-        }
-        
-        // Final fine-tuning
-        while ((titleElement.scrollWidth > containerWidth || titleElement.scrollHeight > containerHeight) && fontSize > 40) {
-            fontSize -= 1;
-            titleElement.style.fontSize = fontSize + 'px';
-        }
-        
-        // Add some spacing below the text based on its final size
-        titleElement.style.marginBottom = (fontSize * 0.2) + 'px';
+    // Check if title has a line break and add class accordingly
+    if (titleElement.innerHTML.includes('<br>')) {
+        titleElement.classList.add('has-break');
+        titleElement.style.lineHeight = '0.8'; // Tighter for two lines
     }
     
-    // Initial resize
-    resizeText();
+    function findMaxFontSize() {
+        const containerWidth = titleWrapper.offsetWidth;
+        const containerHeight = titleWrapper.offsetHeight;
+
+        let fontSize = 800; // Start with large font
+        titleElement.style.fontSize = fontSize + 'px';
+
+        const doesFit = () => {
+            return (
+                titleElement.scrollHeight <= containerHeight &&
+                titleElement.scrollWidth <= containerWidth
+            );
+        };
+
+        while (!doesFit() && fontSize > 10) {
+            fontSize -= 5;
+            titleElement.style.fontSize = fontSize + 'px';
+        }
+
+        fontSize = Math.floor(fontSize * 0.98); // Final adjustment
+        titleElement.style.fontSize = fontSize + 'px';
+    }
     
-    // Resize on window resize
-    window.addEventListener('resize', resizeText);
+    // Initial sizing
+    findMaxFontSize();
+    
+    // Update on resize
+    let resizeTimeout;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(findMaxFontSize, 100);
+    });
 });
 </script>
