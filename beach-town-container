@@ -138,7 +138,7 @@ $unique_id = 'beach-town-' . uniqid();
     
     .beach-town-button {
         display: inline-block;
-        padding: 18px 36px;
+        padding: 12px 28px; /* Reduced padding around text */
         background-color: #6ec0b0;
         color: #ffffff;
         text-decoration: none;
@@ -146,14 +146,15 @@ $unique_id = 'beach-town-' . uniqid();
         font-weight: 700;
         font-size: 2rem;
         box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
         margin-bottom: 40px;
         margin-top: -50px;
     }
 
     .beach-town-button:hover {
         transform: scale(1.05);
-   
+        background-color: #8fd9c9; /* Brighter green on hover */
+        color: #ffffff; /* Ensure text stays white */
     }
 </style>
 
