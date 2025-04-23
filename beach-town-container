@@ -1,0 +1,169 @@
+<?php
+/**
+ * Beach Town Container
+ *
+ * This template creates a full-width container with an ACF background image,
+ * an extra large dynamically sized title overlay, and a button positioned near the bottom.
+ *
+ * @package Nick
+ * @version 1.8
+ * @location templates-parts/flexible-content/beach-town-container.php
+ */
+
+// Check if ACF is active
+if (!function_exists('get_field')) {
+    return;
+}
+
+// Try to get fields using both methods
+// For direct field access
+$background_image = get_field('background_image');
+$button_text = get_field('button_text');
+$button_link = get_field('button_link');
+$title_text = get_field('title_text');
+
+// If fields are empty, try sub_field (for flexible content)
+if (empty($background_image)) {
+    $background_image = get_sub_field('background_image');
+}
+if (empty($button_text)) {
+    $button_text = get_sub_field('button_text');
+}
+if (empty($button_link)) {
+    $button_link = get_sub_field('button_link');
+}
+if (empty($title_text)) {
+    $title_text = get_sub_field('title_text');
+}
+
+// Default values if fields are empty
+$background_style = '';
+if ($background_image && isset($background_image['url'])) {
+    $background_style = 'background-image: url(' . esc_url($background_image['url']) . '); background-size: cover; background-position: center;';
+}
+
+// Container height - adjusted to 650px
+$container_height = '650px';
+
+// Generate a unique ID for this instance
+$unique_id = 'beach-town-' . uniqid();
+?>
+
+<div id="<?php echo esc_attr($unique_id); ?>" class="beach-town-container" style="width: 100%; height: <?php echo esc_attr($container_height); ?>; <?php echo $background_style; ?>">
+    <div class="container-inner">
+        <?php if ($title_text) : ?>
+        <div class="beach-town-title-wrapper">
+            <h2 class="beach-town-title fit-text"><?php echo esc_html($title_text); ?></h2>
+        </div>
+        <?php endif; ?>
+        
+        <?php if ($button_text && $button_link) : ?>
+            <a href="<?php echo esc_url($button_link); ?>" class="beach-town-button">
+                <?php echo esc_html($button_text); ?>
+            </a>
+        <?php endif; ?>
+    </div>
+</div>
+
+<style>
+    .beach-town-container {
+        margin: 0;
+        padding: 0;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .container-inner {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: center;
+        height: 100%;
+        width: 100%;
+        padding: 0;
+    }
+    
+    .beach-town-title-wrapper {
+        width: 100%;
+        text-align: center;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 300px; /* Using fixed height for title area */
+        padding: 0 20px;
+    }
+    
+    .beach-town-title {
+        color: #ffffff;
+		opacity: 0.85;
+        font-weight: 900;
+         text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.4); 
+        margin: 0;
+        width: 100%;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        line-height: 0.9;
+        text-align: center;
+        display: inline-block;
+        padding: 0;
+    }
+    
+    .beach-town-button {
+        display: inline-block;
+        padding: 12px 24px;
+        background-color: #6ec0b0; /* your actual main color as fallback */
+        color: #ffffff;
+        text-decoration: none;
+        border-radius: 4px;
+        font-weight: bold;
+        transition: opacity 0.3s ease;
+        margin-bottom: 40px;
+    }
+    
+    .beach-town-button:hover {
+        opacity: 0.9;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get the specific container
+    const container = document.getElementById('<?php echo esc_js($unique_id); ?>');
+    if (!container) return;
+    
+    const titleElement = container.querySelector('.fit-text');
+    const titleWrapper = container.querySelector('.beach-town-title-wrapper');
+    
+    if (!titleElement || !titleWrapper) return;
+    
+    function resizeText() {
+        const containerWidth = titleWrapper.offsetWidth - 40; // Accounting for padding
+        const containerHeight = titleWrapper.offsetHeight;
+        
+        // Start with a very large font size
+        let fontSize = 250; // Start much larger
+        titleElement.style.fontSize = fontSize + 'px';
+        
+        // Reduce font size until text fits within container width
+        while ((titleElement.scrollWidth > containerWidth || titleElement.scrollHeight > containerHeight) && fontSize > 40) {
+            fontSize -= 2; // Reduce by larger increments for efficiency
+            titleElement.style.fontSize = fontSize + 'px';
+        }
+        
+        // Final fine-tuning
+        while ((titleElement.scrollWidth > containerWidth || titleElement.scrollHeight > containerHeight) && fontSize > 40) {
+            fontSize -= 1;
+            titleElement.style.fontSize = fontSize + 'px';
+        }
+        
+        // Add some spacing below the text based on its final size
+        titleElement.style.marginBottom = (fontSize * 0.2) + 'px';
+    }
+    
+    // Initial resize
+    resizeText();
+    
+    // Resize on window resize
+    window.addEventListener('resize', resizeText);
+});
+</script>
