@@ -6,7 +6,7 @@
  * and MAXIMUM SIZE title text (up to 2 lines).
  *
  * @package Nick
- * @version 2.4
+ * @version 2.6
  * @location templates-parts/flexible-content/beach-town-container.php
  */
 
@@ -114,6 +114,7 @@ $unique_id = 'beach-town-' . uniqid();
         padding: 0;
         margin: 0;
         margin-top: 80px; /* Adjust this value to move the text higher or lower */
+        overflow: hidden; /* Prevent text from overflowing */
     }
     
     .beach-town-title {
@@ -125,11 +126,12 @@ $unique_id = 'beach-town-' . uniqid();
         width: 100%;
         text-transform: uppercase;
         letter-spacing: 1px;
-        line-height: 0.8; /* Tighter line height for more space */
+        line-height: 0.9; /* Slightly increased line height for better readability */
         text-align: center;
-        display: inline-block;
+        display: block; /* Changed from inline-block to block */
         padding: 0;
         white-space: normal; /* Allow wrapping but preserve center alignment */
+        position: relative; /* Add position context */
     }
     
     /* For two-line titles, override the white-space */
@@ -148,14 +150,50 @@ $unique_id = 'beach-town-' . uniqid();
         font-size: 2rem;
         box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
         transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
-        position: relative;
-
+        position: absolute;
+        bottom: 80px; /* Position from bottom */
     }
 
     .beach-town-button:hover {
         transform: scale(1.05);
         background-color: #8fd9c9; /* Brighter green on hover */
         color: #ffffff; /* Ensure text stays white */
+    }
+    
+    /* Mobile-specific adjustments */
+    @media (max-width: 768px) {
+        .beach-town-title-wrapper {
+            min-height: 200px; /* Reduced minimum height for mobile */
+            margin-top: 60px; /* Less top margin on mobile */
+            height: auto !important; /* Override any height set by JS */
+            overflow: visible; /* Allow content to be visible */
+        }
+        
+        .beach-town-title {
+            font-size: 100px !important; /* Force a specific font size on mobile */
+            line-height: 1.1 !important; /* Increase line height for better readability */
+            display: block !important; /* Force block display */
+            white-space: normal !important; /* Ensure text wraps properly */
+            margin-bottom: 20px !important; /* Add space below the title */
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2) !important; /* Smaller shadow on mobile */
+			transform-style: flat !important;
+            perspective: none !important;
+            transform: none !important; /* Prevent any transforms */
+			
+            -webkit-transform: none !important; /* For Safari */
+            -webkit-text-stroke: 0 !important; /* Remove any text stroke */
+            opacity: 0.85 !important; /* Full opacity */
+			font-family: 'Arial', 'Helvetica', sans-serif !important;
+            font-weight: 800 !important; /* Slightly less bold than 900 */
+            letter-spacing: 0 !important; /* Remove letter spacing */
+        }
+        
+        .beach-town-button {
+            font-size: 1.5rem; /* Smaller button text on mobile */
+            padding: 10px 24px; /* Smaller button padding on mobile */
+            bottom: 50px; /* Adjust button position on mobile */
+            position: absolute; /* Ensure absolute positioning */
+        }
     }
 </style>
 
@@ -173,10 +211,20 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check if title has a line break and add class accordingly
     if (titleElement.innerHTML.includes('<br>')) {
         titleElement.classList.add('has-break');
-        titleElement.style.lineHeight = '0.8'; // Tighter for two lines
+        titleElement.style.lineHeight = '0.9'; /* Slightly increased for better readability */
     }
     
     function findMaxFontSize() {
+        // Skip font sizing algorithm on mobile
+        if (window.innerWidth <= 768) {
+            // For mobile, use CSS-defined sizes only
+            // Clear any inline styles that might have been set
+            if (titleElement.style.fontSize) {
+                titleElement.style.fontSize = '';
+            }
+            return;
+        }
+        
         const containerWidth = titleWrapper.offsetWidth;
         const containerHeight = titleWrapper.offsetHeight;
 
