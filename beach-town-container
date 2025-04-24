@@ -6,7 +6,7 @@
  * and MAXIMUM SIZE title text (up to 2 lines).
  *
  * @package Nick
- * @version 2.1
+ * @version 2.3
  * @location templates-parts/flexible-content/beach-town-container.php
  */
 
@@ -96,23 +96,24 @@ $unique_id = 'beach-town-' . uniqid();
     .container-inner {
         display: flex;
         flex-direction: column;
-        justify-content: space-between;
         align-items: center;
         height: 100%;
         width: 100%;
         padding: 0;
+        position: relative;
     }
     
     .beach-town-title-wrapper {
         width: 100%;
-        height: 65%; /* Changed from fixed 400px to 65% of container height */
+        height: auto;
+        min-height: 350px;
         text-align: center;
         display: flex;
         justify-content: center;
-        align-items: center;
+        align-items: flex-start; /* Align to top */
         padding: 0;
         margin: 0;
-        margin-top: -20px; /* Negative margin to use more vertical space */
+        margin-top: 80px; /* Adjust this value to move the text higher or lower */
     }
     
     .beach-town-title {
@@ -147,8 +148,8 @@ $unique_id = 'beach-town-' . uniqid();
         font-size: 2rem;
         box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
         transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
-        margin-bottom: 40px;
-        margin-top: -50px;
+        position: relative;
+
     }
 
     .beach-town-button:hover {
