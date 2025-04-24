@@ -6,7 +6,7 @@
  * and MAXIMUM SIZE title text (up to 2 lines).
  *
  * @package Nick
- * @version 2.3
+ * @version 2.4
  * @location templates-parts/flexible-content/beach-town-container.php
  */
 
@@ -78,7 +78,7 @@ $unique_id = 'beach-town-' . uniqid();
         <?php endif; ?>
         
         <?php if ($button_text && $button_link) : ?>
-            <a href="<?php echo esc_url($button_link); ?>" class="beach-town-button">
+            <a href="<?php echo esc_url($button_link); ?>" class="beach-town-button" id="<?php echo esc_attr($unique_id); ?>-button">
                 <?php echo esc_html($button_text); ?>
             </a>
         <?php endif; ?>
@@ -208,5 +208,22 @@ document.addEventListener('DOMContentLoaded', function() {
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(findMaxFontSize, 100);
     });
+    
+    // Handle the button to open in new tab on desktop only
+    const button = document.getElementById('<?php echo esc_js($unique_id); ?>-button');
+    if (button) {
+        // Function to detect if user is on mobile
+        function isMobileDevice() {
+            return (typeof window.orientation !== "undefined") || 
+                   (navigator.userAgent.indexOf('IEMobile') !== -1) ||
+                   (window.innerWidth <= 768); // Also consider small screens as mobile
+        }
+        
+        // Set target attribute for desktop only
+        if (!isMobileDevice()) {
+            button.setAttribute('target', '_blank');
+            button.setAttribute('rel', 'noopener noreferrer'); // Security best practice
+        }
+    }
 });
 </script>
