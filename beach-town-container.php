@@ -1,0 +1,277 @@
+<?php
+/**
+ * Beach Town Container
+ *
+ * This template creates a full-width container with an ACF background image,
+ * and MAXIMUM SIZE title text (up to 2 lines).
+ *
+ * @package Nick
+ * @version 2.6
+ * @location templates-parts/flexible-content/beach-town-container.php
+ */
+
+// Check if ACF is active
+if (!function_exists('get_field')) {
+    return;
+}
+
+// Try to get fields using both methods
+// For direct field access
+$background_image = get_field('background_image');
+$button_text = get_field('button_text');
+$button_link = get_field('button_link');
+$title_text = get_field('title_text');
+
+// If fields are empty, try sub_field (for flexible content)
+if (empty($background_image)) {
+    $background_image = get_sub_field('background_image');
+}
+if (empty($button_text)) {
+    $button_text = get_sub_field('button_text');
+}
+if (empty($button_link)) {
+    $button_link = get_sub_field('button_link');
+}
+if (empty($title_text)) {
+    $title_text = get_sub_field('title_text');
+}
+
+// Process title text to create line breaks for two-word beach names
+if (!empty($title_text)) {
+    // Check if title contains multiple words
+    $words = explode(' ', $title_text);
+    if (count($words) >= 2) {
+        // For beach names like "Rosemary Beach" or "Blue Mountain Beach"
+        // Add a line break after the first word (or second word for 3+ word names)
+        $break_position = count($words) > 2 ? 2 : 1;
+        $first_part = array_slice($words, 0, $break_position);
+        $second_part = array_slice($words, $break_position);
+        
+        $title_text_formatted = implode(' ', $first_part) . '<br>' . implode(' ', $second_part);
+    } else {
+        // For single word names like "Seagrove"
+        $title_text_formatted = $title_text;
+    }
+} else {
+    $title_text_formatted = '';
+}
+
+// Default values if fields are empty
+$background_style = '';
+if ($background_image && isset($background_image['url'])) {
+    $background_style = 'background-image: url(' . esc_url($background_image['url']) . '); background-size: cover; background-position: center;';
+}
+
+// Container height - adjusted to 650px
+$container_height = '650px';
+
+// Generate a unique ID for this instance
+$unique_id = 'beach-town-' . uniqid();
+?>
+
+<div id="<?php echo esc_attr($unique_id); ?>" class="beach-town-container" style="width: 100%; height: <?php echo esc_attr($container_height); ?>; <?php echo $background_style; ?>">
+    <div class="container-inner">
+        <?php if ($title_text) : ?>
+        <div class="beach-town-title-wrapper">
+            <h2 class="beach-town-title fit-text"><?php echo wp_kses_post($title_text_formatted); ?></h2>
+        </div>
+        <?php endif; ?>
+        
+        <?php if ($button_text && $button_link) : ?>
+            <a href="<?php echo esc_url($button_link); ?>" class="beach-town-button" id="<?php echo esc_attr($unique_id); ?>-button">
+                <?php echo esc_html($button_text); ?>
+            </a>
+        <?php endif; ?>
+    </div>
+</div>
+
+<style>
+    .beach-town-container {
+        margin: 0;
+        padding: 0;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .container-inner {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        height: 100%;
+        width: 100%;
+        padding: 0;
+        position: relative;
+    }
+    
+    .beach-town-title-wrapper {
+        width: 100%;
+        height: auto;
+        min-height: 350px;
+        text-align: center;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start; /* Align to top */
+        padding: 0;
+        margin: 0;
+        margin-top: 80px; /* Adjust this value to move the text higher or lower */
+        overflow: hidden; /* Prevent text from overflowing */
+    }
+    
+    .beach-town-title {
+        color: #ffffff;
+        opacity: 0.85;
+        font-weight: 900;
+        text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.4); 
+        margin: 0;
+        width: 100%;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        line-height: 0.9; /* Slightly increased line height for better readability */
+        text-align: center;
+        display: block; /* Changed from inline-block to block */
+        padding: 0;
+        white-space: normal; /* Allow wrapping but preserve center alignment */
+        position: relative; /* Add position context */
+    }
+    
+    /* For two-line titles, override the white-space */
+    .beach-town-title.has-break {
+        white-space: normal;
+    }
+    
+    .beach-town-button {
+        display: inline-block;
+        padding: 12px 28px; /* Reduced padding around text */
+        background-color: #6ec0b0;
+        color: #ffffff;
+        text-decoration: none;
+        border-radius: 3px;
+        font-weight: 700;
+        font-size: 2rem;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+        transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+        position: absolute;
+        bottom: 80px; /* Position from bottom */
+    }
+
+    .beach-town-button:hover {
+        transform: scale(1.05);
+        background-color: #8fd9c9; /* Brighter green on hover */
+        color: #ffffff; /* Ensure text stays white */
+    }
+    
+    /* Mobile-specific adjustments */
+    @media (max-width: 768px) {
+        .beach-town-title-wrapper {
+            min-height: 200px; /* Reduced minimum height for mobile */
+            margin-top: 60px; /* Less top margin on mobile */
+            height: auto !important; /* Override any height set by JS */
+            overflow: visible; /* Allow content to be visible */
+        }
+        
+        .beach-town-title {
+            font-size: 100px !important; /* Force a specific font size on mobile */
+            line-height: 1.1 !important; /* Increase line height for better readability */
+            display: block !important; /* Force block display */
+            white-space: normal !important; /* Ensure text wraps properly */
+            margin-bottom: 20px !important; /* Add space below the title */
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2) !important; /* Smaller shadow on mobile */
+			transform-style: flat !important;
+            perspective: none !important;
+            transform: none !important; /* Prevent any transforms */
+			
+            -webkit-transform: none !important; /* For Safari */
+            -webkit-text-stroke: 0 !important; /* Remove any text stroke */
+            opacity: 0.85 !important; /* Full opacity */
+			font-family: 'Arial', 'Helvetica', sans-serif !important;
+            font-weight: 800 !important; /* Slightly less bold than 900 */
+            letter-spacing: 0 !important; /* Remove letter spacing */
+        }
+        
+        .beach-town-button {
+            font-size: 1.5rem; /* Smaller button text on mobile */
+            padding: 10px 24px; /* Smaller button padding on mobile */
+            bottom: 50px; /* Adjust button position on mobile */
+            position: absolute; /* Ensure absolute positioning */
+        }
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get the specific container
+    const container = document.getElementById('<?php echo esc_js($unique_id); ?>');
+    if (!container) return;
+    
+    const titleElement = container.querySelector('.fit-text');
+    const titleWrapper = container.querySelector('.beach-town-title-wrapper');
+    
+    if (!titleElement || !titleWrapper) return;
+    
+    // Check if title has a line break and add class accordingly
+    if (titleElement.innerHTML.includes('<br>')) {
+        titleElement.classList.add('has-break');
+        titleElement.style.lineHeight = '0.9'; /* Slightly increased for better readability */
+    }
+    
+    function findMaxFontSize() {
+        // Skip font sizing algorithm on mobile
+        if (window.innerWidth <= 768) {
+            // For mobile, use CSS-defined sizes only
+            // Clear any inline styles that might have been set
+            if (titleElement.style.fontSize) {
+                titleElement.style.fontSize = '';
+            }
+            return;
+        }
+        
+        const containerWidth = titleWrapper.offsetWidth;
+        const containerHeight = titleWrapper.offsetHeight;
+
+        let fontSize = 800; // Start with large font
+        titleElement.style.fontSize = fontSize + 'px';
+
+        const doesFit = () => {
+            return (
+                titleElement.scrollHeight <= containerHeight &&
+                titleElement.scrollWidth <= containerWidth
+            );
+        };
+
+        while (!doesFit() && fontSize > 10) {
+            fontSize -= 5;
+            titleElement.style.fontSize = fontSize + 'px';
+        }
+
+        fontSize = Math.floor(fontSize * 0.98); // Final adjustment
+        titleElement.style.fontSize = fontSize + 'px';
+    }
+    
+    // Initial sizing
+    findMaxFontSize();
+    
+    // Update on resize
+    let resizeTimeout;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(findMaxFontSize, 100);
+    });
+    
+    // Handle the button to open in new tab on desktop only
+    const button = document.getElementById('<?php echo esc_js($unique_id); ?>-button');
+    if (button) {
+        // Function to detect if user is on mobile
+        function isMobileDevice() {
+            return (typeof window.orientation !== "undefined") || 
+                   (navigator.userAgent.indexOf('IEMobile') !== -1) ||
+                   (window.innerWidth <= 768); // Also consider small screens as mobile
+        }
+        
+        // Set target attribute for desktop only
+        if (!isMobileDevice()) {
+            button.setAttribute('target', '_blank');
+            button.setAttribute('rel', 'noopener noreferrer'); // Security best practice
+        }
+    }
+});
+</script>
