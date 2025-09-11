@@ -37,6 +37,9 @@ $col_eyebrow = trim((string) ($tc['lb_color_eyebrow'] ?? get_sub_field('lb_color
 $col_heading = trim((string) ($tc['lb_color_heading'] ?? get_sub_field('lb_color_heading')));
 $col_text    = trim((string) ($tc['lb_color_text']    ?? get_sub_field('lb_color_text')));
 
+$eyebrow_gap = intval(get_sub_field('lb_eyebrow_gap') ?: 0);
+
+
 // --- mapping helpers ---
 $fmap = [
   'center'=>'50% 50%','top'=>'50% 0%','bottom'=>'50% 100%',
@@ -63,6 +66,12 @@ if ($aspect_mode === 'ratio') {
 if ($bg_color) {
   $style_vars .= '--bg:'.$bg_color.';'; // <— NEW
 }
+
+// Eyebrow bottom gap (falls back in CSS if not set)
+if ($eyebrow_gap) {
+  $style_vars .= '--eyebrow-gap:'.$eyebrow_gap.'px;';
+}
+
 
 // Text color CSS variables (only added if set in ACF)
 if ($col_eyebrow) $style_vars .= '--c-eyebrow:'.$col_eyebrow.';';
@@ -114,10 +123,16 @@ if (!defined('LB_ONE_CSS')) {
     .lb-one.var-full .lb-copy-wrap{ position:absolute; inset:0; display:grid; place-items:center; text-align:center; padding: clamp(16px, 4vw, 56px); }
     .lb-one.var-full.align-left  .lb-copy{ text-align:left; margin-inline:auto; width:min(1200px,92vw); }
     .lb-one.var-full.align-right .lb-copy{ text-align:right; margin-inline:auto; width:min(1200px,92vw); }
+/* Eyebrow sits under H1; bottom margin is editor-controlled */
 .lb-one .eyebrow{
-  font-weight:800; letter-spacing:.04em; text-transform:uppercase; margin:0 0 8px;
+  font-weight:800;
+  letter-spacing:.04em;
+  text-transform:uppercase;
   color: var(--c-eyebrow, #6ec0b0);
+  margin: 6px 0 var(--eyebrow-gap, 16px);  /* default 16px if ACF empty */
 }
+	  
+	  
 /* Full-bleed hero defaults to white, override with ACF if set */
 .lb-one.var-full h1    { color: var(--c-heading, #fff); }
 .lb-one.var-full .lead { color: var(--c-text,    #fff); }
@@ -135,7 +150,7 @@ if (!defined('LB_ONE_CSS')) {
     .lb-one.var-split.media-right .split-grid{ grid-template-areas: "copy media"; }
     .lb-one.var-split .split-media{ grid-area: media; }
     .lb-one.var-split .split-copy{ grid-area: copy; }
-    .lb-one.var-split h1{ font-size: clamp(28px, 4.2vw, 44px); line-height:1.08; margin:0 0 10px; }
+    .lb-one.var-split h1{ font-size: clamp(28px, 4.2vw, 44px); line-height:1.08; margin:0 0 4px; }
     .lb-one.var-split .lead{ font-size: 18px; opacity:.9; margin:0 0 18px; }
 	  
 	  	  /* background color surface */
@@ -185,6 +200,7 @@ if (!defined('LB_ONE_CSS')) {
 
 /* Mobile stacking - IMPORTANT: This overrides desktop layout */
 @media (max-width: 900px){
+	
   .lb-one.var-split .split-grid {
     grid-template-columns: 1fr !important;
     grid-template-areas: 
@@ -225,8 +241,11 @@ if (!defined('LB_ONE_CSS')) {
   }
 }
 
-
-	  
+	  @media (min-width: 900px){
+  .lb-one .eyebrow{
+    margin-bottom: calc(var(--eyebrow-gap, 16px) + 4px); /* a touch more on desktop */
+  }
+}
 	  
 	  
 	  
