@@ -1,0 +1,197 @@
+<?php
+/**
+ * Landing Builder · 80/20 single-block
+ * Path: templates-parts/flexible-content/special-section-one.php
+ */
+
+// --- read controls/content ---
+$variant      = get_sub_field('lb_variant') ?: 'full';
+$container    = get_sub_field('lb_container') ?: 'default';
+$pad_y        = get_sub_field('lb_pad_y') ?: 'm';
+$fit_mode     = get_sub_field('lb_fit_mode') ?: 'cover';
+$aspect_mode  = get_sub_field('lb_aspect_mode') ?: 'ratio';
+$ratio_choice = get_sub_field('lb_ratio') ?: '16:9';
+$h_desktop    = intval(get_sub_field('lb_height_desktop') ?: 0);
+$h_mobile     = intval(get_sub_field('lb_height_mobile') ?: 0);
+$focal        = get_sub_field('lb_focal') ?: 'center';
+$media_side   = get_sub_field('lb_media_side') ?: 'right';
+$text_align   = get_sub_field('lb_text_align') ?: 'center';
+$overlay_pct  = intval(get_sub_field('lb_overlay') ?: 0);
+$show_on      = get_sub_field('lb_show_on') ?: 'both';
+$bg_color     = trim((string) get_sub_field('lb_bg_color')); // <— NEW
+
+$img_d = get_sub_field('lb_image_desktop');
+$img_m = get_sub_field('lb_image_mobile') ?: $img_d;
+
+$eyebrow = trim((string) get_sub_field('lb_eyebrow'));
+$heading = trim((string) get_sub_field('lb_heading'));
+$lead    = trim((string) get_sub_field('lb_lead'));
+$c1t     = trim((string) get_sub_field('lb_cta1_text'));
+$c1u     = trim((string) get_sub_field('lb_cta1_url'));
+$c2t     = trim((string) get_sub_field('lb_cta2_text'));
+$c2u     = trim((string) get_sub_field('lb_cta2_url'));
+
+// --- mapping helpers ---
+$fmap = [
+  'center'=>'50% 50%','top'=>'50% 0%','bottom'=>'50% 100%',
+  'left'=>'0% 50%','right'=>'100% 50%','top-left'=>'0% 0%',
+  'top-right'=>'100% 0%','bottom-left'=>'0% 100%','bottom-right'=>'100% 100%'
+];
+$object_pos = isset($fmap[$focal]) ? $fmap[$focal] : '50% 50%';
+$ratio_css = str_replace(':','/',$ratio_choice);
+$h_m_fallback = $h_mobile ?: ( $h_desktop ? max(240, round($h_desktop * 0.6)) : 360 );
+
+// --- classes & vars ---
+$cls = ['lb-one', 'var-'.$variant, 'container-'.$container, 'pad-'.$pad_y, 'align-'.$text_align];
+if ($show_on === 'desktop') $cls[] = 'lb-hide-mobile';
+if ($show_on === 'mobile')  $cls[] = 'lb-hide-desktop';
+if ($variant === 'split')   $cls[] = ($media_side === 'left') ? 'media-left' : 'media-right';
+
+$style_vars = '--overlay:'. max(0,min(0.9,$overlay_pct/100)) .';';
+if ($aspect_mode === 'ratio') {
+  $style_vars .= '--ratio:'.$ratio_css.';';
+} elseif ($aspect_mode === 'fixed') {
+  if ($h_desktop) $style_vars .= '--h-desktop:'.$h_desktop.'px;';
+  $style_vars .= '--h-mobile:'.$h_m_fallback.'px;';
+}
+if ($bg_color) {
+  $style_vars .= '--bg:'.$bg_color.';'; // <— NEW
+}
+
+// --- tiny CSS once ---
+if (!defined('LB_ONE_CSS')) {
+  define('LB_ONE_CSS', true); ?>
+  <style>
+    /* containers */
+    .lb-one .lb-container{ width:min(1200px,92vw); margin-inline:auto; }
+    .lb-one.container-wide .lb-container{ width:min(1400px,96vw); }
+    .lb-one.container-full .lb-container{ width:100%; }
+
+    /* spacing */
+    .lb-one.pad-s{ padding-block:32px; }
+    .lb-one.pad-m{ padding-block:56px; }
+    .lb-one.pad-l{ padding-block:84px; }
+
+    /* visibility */
+    .lb-hide-desktop{ display:none; }
+    @media (max-width:900px){
+      .lb-hide-desktop{ display:initial; }
+      .lb-hide-mobile{ display:none; }
+    }
+
+    /* base */
+    .lb-one{ position:relative; }
+    .lb-one .btn{ display:inline-block; padding:12px 16px; border-radius:12px; font-weight:700; text-decoration:none; }
+    .lb-one .btn-primary{ background:#6ec0b0; color:#0f2f2a; }
+    .lb-one .btn-secondary{ background:transparent; border:2px solid currentColor; }
+
+    /* media box (shared) */
+    .lb-one .lb-media{ width:100%; display:block; position:relative; overflow:hidden; border-radius:16px; }
+    .lb-one[data-aspect="ratio"] .lb-media{ aspect-ratio: var(--ratio); height:auto; }
+    .lb-one[data-aspect="fixed"] .lb-media{ height: var(--h-desktop, 520px); }
+    @media (max-width:900px){
+      .lb-one[data-aspect="fixed"] .lb-media{ height: var(--h-mobile, 360px); }
+    }
+    .lb-one .lb-media picture, .lb-one .lb-media img{ width:100%; height:100%; display:block; }
+    .lb-one[data-fit="cover"]  .lb-media img{ object-fit:cover; }
+.lb-one[data-fit="contain"] .lb-media img{ object-fit: contain; background: transparent; }
+
+    /* FULL variant */
+    .lb-one.var-full .lb-media{ border-radius:0; }
+    .lb-one.var-full .lb-overlay{ position:absolute; inset:0; background:#000; opacity:var(--overlay,0); pointer-events:none; }
+    .lb-one.var-full .lb-copy-wrap{ position:absolute; inset:0; display:grid; place-items:center; text-align:center; padding: clamp(16px, 4vw, 56px); }
+    .lb-one.var-full.align-left  .lb-copy{ text-align:left; margin-inline:auto; width:min(1200px,92vw); }
+    .lb-one.var-full.align-right .lb-copy{ text-align:right; margin-inline:auto; width:min(1200px,92vw); }
+    .lb-one .eyebrow{ font-weight:800; letter-spacing:.04em; color:#6ec0b0; text-transform:uppercase; margin:0 0 8px; }
+    .lb-one h1{ font-size: clamp(30px, 5vw, 56px); line-height:1.05; margin:0 0 10px; color:#fff; }
+    .lb-one .lead{ font-size: clamp(16px, 2.4vw, 20px); opacity:.95; margin:0 0 18px; color:#fff; }
+    .lb-one .btn-row{ display:flex; gap:12px; flex-wrap:wrap; }
+
+    /* SPLIT variant */
+    .lb-one.var-split .lb-container{ }
+    .lb-one.var-split .split-grid{ display:grid; gap:24px; align-items:center; grid-template-columns: 1.05fr 0.95fr; }
+    .lb-one.var-split.media-left .split-grid{ grid-template-areas: "media copy"; }
+    .lb-one.var-split.media-right .split-grid{ grid-template-areas: "copy media"; }
+    .lb-one.var-split .split-media{ grid-area: media; }
+    .lb-one.var-split .split-copy{ grid-area: copy; }
+    .lb-one.var-split h1{ font-size: clamp(28px, 4.2vw, 44px); line-height:1.08; margin:0 0 10px; }
+    .lb-one.var-split .lead{ font-size: 18px; opacity:.9; margin:0 0 18px; }
+	  
+	  	  /* background color surface */
+.lb-one { background: var(--bg, transparent); }              /* section padding area */
+.lb-one .lb-media { background: var(--bg, transparent); }    /* letterbox/contain area */
+
+	  
+	  
+    @media (max-width:900px){
+      .lb-one.var-split .split-grid{ grid-template-columns:1fr; grid-template-areas: "media" "copy"; }
+    }
+  </style>
+<?php } // end one-time CSS ?>
+
+<?php
+// figure image URLs/alt
+$src_d = !empty($img_d['url']) ? $img_d['url'] : '';
+$src_m = !empty($img_m['url']) ? $img_m['url'] : $src_d;
+$alt   = !empty($img_d['alt']) ? $img_d['alt'] : ($heading ?: '');
+
+// wrapper attrs
+$attrs = [
+  'class' => implode(' ', $cls),
+  'data-fit' => esc_attr($fit_mode),
+  'data-aspect' => esc_attr($aspect_mode),
+  'style' => esc_attr($style_vars),
+];
+?>
+<section class="<?php echo $attrs['class']; ?>" data-fit="<?php echo $attrs['data-fit']; ?>" data-aspect="<?php echo $attrs['data-aspect']; ?>" style="<?php echo $attrs['style']; ?>">
+
+  <?php if ($variant === 'full'): ?>
+    <div class="lb-media">
+      <?php if ($src_d): ?>
+        <picture>
+          <source media="(max-width: 900px)" srcset="<?php echo esc_url($src_m); ?>">
+          <img src="<?php echo esc_url($src_d); ?>" alt="<?php echo esc_attr($alt); ?>" style="object-position: <?php echo esc_attr($object_pos); ?>;">
+        </picture>
+      <?php endif; ?>
+      <span class="lb-overlay"></span>
+    </div>
+
+    <div class="lb-copy-wrap">
+      <div class="lb-copy">
+        <?php if ($eyebrow): ?><p class="eyebrow"><?php echo esc_html($eyebrow); ?></p><?php endif; ?>
+        <?php if ($heading): ?><h1><?php echo esc_html($heading); ?></h1><?php endif; ?>
+        <?php if ($lead): ?><p class="lead"><?php echo esc_html($lead); ?></p><?php endif; ?>
+        <div class="btn-row">
+          <?php if ($c1t && $c1u): ?><a class="btn btn-primary" href="<?php echo esc_url($c1u); ?>"><?php echo esc_html($c1t); ?></a><?php endif; ?>
+          <?php if ($c2t && $c2u): ?><a class="btn btn-secondary" href="<?php echo esc_url($c2u); ?>"><?php echo esc_html($c2t); ?></a><?php endif; ?>
+        </div>
+      </div>
+    </div>
+
+  <?php else: // SPLIT ?>
+    <div class="lb-container">
+      <div class="split-grid">
+        <div class="split-media">
+          <div class="lb-media">
+            <?php if ($src_d): ?>
+              <picture>
+                <source media="(max-width: 900px)" srcset="<?php echo esc_url($src_m); ?>">
+                <img src="<?php echo esc_url($src_d); ?>" alt="<?php echo esc_attr($alt); ?>" style="object-position: <?php echo esc_attr($object_pos); ?>;">
+              </picture>
+            <?php endif; ?>
+          </div>
+        </div>
+
+        <div class="split-copy">
+          <?php if ($eyebrow): ?><p class="eyebrow" style="color:#6ec0b0;"><?php echo esc_html($eyebrow); ?></p><?php endif; ?>
+          <?php if ($heading): ?><h1><?php echo esc_html($heading); ?></h1><?php endif; ?>
+          <?php if ($lead): ?><p class="lead"><?php echo esc_html($lead); ?></p><?php endif; ?>
+          <div class="btn-row">
+            <?php if ($c1t && $c1u): ?><a class="btn btn-primary" href="<?php echo esc_url($c1u); ?>"><?php echo esc_html($c1t); ?></a><?php endif; ?>
+            <?php if ($c2t && $c2u): ?><a class="btn btn-secondary" href="<?php echo esc_url($c2u); ?>"><?php echo esc_html($c2t); ?></a><?php endif; ?>
+          </div>
+        </div>
+      </div>
+    </div>
+  <?php endif; ?>
+</section>
