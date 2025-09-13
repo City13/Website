@@ -19,7 +19,6 @@ $text_align   = get_sub_field('lb_text_align') ?: 'center';
 $overlay_pct  = intval(get_sub_field('lb_overlay') ?: 0);
 $show_on      = get_sub_field('lb_show_on') ?: 'both';
 $bg_color     = trim((string) get_sub_field('lb_bg_color')); // <— NEW
-$form_sc = trim((string) get_sub_field('lb_form_shortcode'));
 
 
 // Form fields (group-aware; falls back to standalone fields)
@@ -30,7 +29,15 @@ $form_subtitle  = trim((string) ($form_opts['lb_form_subtitle'] ?? get_sub_field
 
 // Optional style controls if you added them earlier (safe defaults even if you didn't)
 $form_align   = ($form_opts['lb_form_align']  ?? 'left');   // left|center|right
-$form_width   = ($form_opts['lb_form_width']  ?? 'm');      // s|m|l -> 480/640/720
+// WIDTH: normalize label/value to s|m|l
+$form_width_raw = strtolower(trim((string)($form_opts['lb_form_width'] ?? get_sub_field('lb_form_width') ?? 'm')));
+if (in_array($form_width_raw, ['s','small','480','480px'], true)) {
+  $form_width = 's';
+} elseif (in_array($form_width_raw, ['l','large','720','720px'], true)) {
+  $form_width = 'l';
+} else {
+  $form_width = 'm'; // includes 'm','medium','640','640px' or anything else
+}
 $form_pad     = ($form_opts['lb_form_pad']    ?? 'm');      // z|s|m|l -> 0/16/24/32
 $form_radius  = ($form_opts['lb_form_radius'] ?? 'm');      // s|m|l -> 8/16/24
 $form_accent  = trim((string) ($form_opts['lb_form_accent'] ?? ''));
@@ -101,6 +108,14 @@ if ($form_accent)    $style_vars .= '--form-accent:'.$form_accent.';';
 if ($form_bg_form)   $style_vars .= '--form-bg:'.$form_bg_form.';';
 if ($form_text_form) $style_vars .= '--form-text:'.$form_text_form.';';
 
+// Field max width: by default, match the form max
+$style_vars .= '--field-max:'.($w_map[$form_width] ?? 640).'px;';
+
+$style_vars .= '--copy-max:840px;';   // cap copy width
+$style_vars .= '--copy-pad:24px;';    // inner side padding for centered copy
+
+
+
 
 // Eyebrow bottom gap (falls back in CSS if not set)
 if ($eyebrow_gap) {
@@ -139,8 +154,7 @@ if (!defined('LB_ONE_CSS')) {
 .lb-one.var-full.pad-z .lb-copy > :first-child{ margin-top:0; }
 .lb-one.var-full.pad-z .lb-copy > :last-child{  margin-bottom:0; }
 
-.lb-one .lb-form { margin-top: 16px; }
-
+	  .topTitle { display: none; }
 
     /* visibility */
     .lb-hide-desktop{ display:none; }
@@ -159,9 +173,7 @@ if (!defined('LB_ONE_CSS')) {
     .lb-one .lb-media{ width:100%; display:block; position:relative; overflow:hidden; border-radius:16px; }
     .lb-one[data-aspect="ratio"] .lb-media{ aspect-ratio: var(--ratio); height:auto; }
     .lb-one[data-aspect="fixed"] .lb-media{ height: var(--h-desktop, 520px); }
-    @media (max-width:900px){
-      .lb-one[data-aspect="fixed"] .lb-media{ height: var(--h-mobile, 360px); }
-    }
+
     .lb-one .lb-media picture, .lb-one .lb-media img{ width:100%; height:100%; display:block; }
     .lb-one[data-fit="cover"]  .lb-media img{ object-fit:cover; }
 .lb-one[data-fit="contain"] .lb-media img{ object-fit: contain; background: transparent; }
@@ -248,184 +260,368 @@ if (!defined('LB_ONE_CSS')) {
 }
 	  
 	  
-	  /* ===== Form box styling (scoped) ===== */
-.lb-one .lb-formbox{
-  max-width: var(--form-max, 640px);
-  padding: var(--form-pad, 24px);
-  border-radius: var(--form-radius, 16px);
-  background: var(--form-bg, transparent);
-  color: var(--form-text, inherit);
-  box-shadow: var(--form-shadow, none);
-  margin-top: 16px;
-}
-.lb-one .lb-formbox.align-left  { margin-left: 0;    margin-right: auto; }
-.lb-one .lb-formbox.align-center{ margin-left: auto; margin-right: auto; text-align: initial; }
-.lb-one .lb-formbox.align-right { margin-left: auto; margin-right: 0; }
-
-/* Gravity Forms tidy defaults (Gravity 2.7+ uses .gravity-theme) */
-.lb-one .lb-formbox .gform_wrapper .gfield_label{ 
-  color: inherit; font-weight: 700; margin-bottom: 6px;
-}
-.lb-one .lb-formbox .gform_wrapper .gfield_description,
-.lb-one .lb-formbox .gform_wrapper .instruction{ 
-  color: color-mix(in oklab, var(--form-text, currentColor) 70%, transparent);
-  font-size: .95em;
+	  /* Limit single-line fields (like email) inside the card */
+.lb-one .lb-formbox .gform_wrapper .gfield .ginput_container{
+  max-width: var(--field-max, var(--form-max, 640px));
 }
 
-/* Inputs */
-.lb-one .lb-formbox .gform_wrapper input[type="text"],
-.lb-one .lb-formbox .gform_wrapper input[type="email"],
-.lb-one .lb-formbox .gform_wrapper input[type="tel"],
-.lb-one .lb-formbox .gform_wrapper input[type="number"],
-.lb-one .lb-formbox .gform_wrapper select,
-.lb-one .lb-formbox .gform_wrapper textarea{
-  width:100%; border:1px solid rgba(0,0,0,.15); border-radius:12px; padding:12px 14px;
-  background:#fff; color:#111;
+/* Keep the input centered when the card is centered/right-aligned */
+.lb-one .lb-formbox.align-center .gform_wrapper .gfield .ginput_container{ 
+  margin-left: auto; margin-right: auto; 
 }
-.lb-one .lb-formbox .gform_wrapper input:focus,
-.lb-one .lb-formbox .gform_wrapper select:focus,
-.lb-one .lb-formbox .gform_wrapper textarea:focus{
-  outline: none;
-  border-color: var(--form-accent, #6ec0b0);
-  box-shadow: 0 0 0 3px color-mix(in oklab, var(--form-accent, #6ec0b0) 30%, transparent);
+.lb-one .lb-formbox.align-right .gform_wrapper .gfield .ginput_container{ 
+  margin-left: auto; margin-right: 0; 
 }
 
-/* Spacing */
-.lb-one .lb-formbox .gform_wrapper .gfield { margin-bottom: 14px; }
-.lb-one .lb-formbox .gform_wrapper .gform_body { margin-bottom: 12px; }
-
-/* Submit button */
-.lb-one .lb-formbox .gform_wrapper .gform_button{
-  background: var(--form-accent, #6ec0b0);
-  color:#0f2f2a; border:none; border-radius:12px; padding:12px 16px; font-weight:700; cursor:pointer;
-}
-.lb-one .lb-formbox .gform_wrapper .gform_button:hover{
-  filter: brightness(0.97);
+/* Ensure the actual input fills the container but not beyond */
+.lb-one .lb-formbox .gform_wrapper .ginput_container input[type="email"],
+.lb-one .lb-formbox .gform_wrapper .ginput_container input[type="text"]{
+  width: 100%;
+  max-width: 100%;
 }
 
-/* Validation/error colors inherit your accent/text */
-.lb-one .lb-formbox .gform_wrapper .validation_message,
-.lb-one .lb-formbox .gform_wrapper .gform_validation_errors{
-  color: #b00020;
-}
-
-/* Note under the form */
-.lb-one .lb-formbox .form-note{ 
-  margin-top: 10px; font-size: .95em; 
-  color: color-mix(in oklab, var(--form-text, currentColor) 75%, transparent);
-}
 	  
 	  
-	  /* ===== Elevated form card (scoped) ===== */
+	  
+	  
+	  
+/* ===== Clean Form Box Styling ===== */
 .lb-one .lb-formbox{
   position: relative;
-  max-width: var(--form-max, 640px);
-  padding: var(--form-pad, 24px);
-  border-radius: var(--form-radius, 16px);
+  max-width: var(--form-max, 640px); /* This uses your ACF width setting */
+  padding: var(--form-pad, 32px);
+  border-radius: var(--form-radius, 20px);
   background: var(--form-bg, #fff);
-  color: var(--form-text, inherit);
-  border: 1px solid rgba(0,0,0,.06);
-  /* layered depth */
+  color: var(--form-text, #2d3748);
+  
+  /* Enhanced shadow system */
+  border: 1px solid rgba(0,0,0,.08);
   box-shadow:
-    0 1px 0 rgba(0,0,0,.04),
-    0 6px 14px rgba(0,0,0,.08),
-    0 16px 32px -16px rgba(0,0,0,.20);
-  margin-top: 16px;
-  backdrop-filter: saturate(110%) blur(0px);
+    0 2px 4px rgba(0,0,0,.04),
+    0 8px 24px rgba(0,0,0,.12),
+    0 24px 48px rgba(0,0,0,.16);
+  
+  margin-top: 24px;
+  backdrop-filter: saturate(110%) blur(1px);
+  transition: all 0.3s ease;
 }
 
-/* subtle top accent bar using your accent color */
-.lb-one .lb-formbox::after{
-  content:"";
-  position:absolute; left:0; top:0; height:3px; width:100%;
-  border-top-left-radius: inherit; border-top-right-radius: inherit;
-  background: var(--form-accent, #6ec0b0);
-  opacity: .9;
+.lb-one .lb-formbox:hover{
+  transform: translateY(-2px);
+  box-shadow:
+    0 4px 8px rgba(0,0,0,.06),
+    0 12px 32px rgba(0,0,0,.14),
+    0 32px 64px rgba(0,0,0,.20);
 }
 
-/* alignment helpers */
+/* NO accent bar - completely removed */
+.lb-one .lb-formbox::before{
+  display: none;
+}
+
+/* Alignment helpers */
 .lb-one .lb-formbox.align-left  { margin-left: 0;    margin-right: auto; }
 .lb-one .lb-formbox.align-center{ margin-left: auto; margin-right: auto; text-align: initial; }
 .lb-one .lb-formbox.align-right { margin-left: auto; margin-right: 0; }
 
-/* header/subheader inside the form card */
-.lb-one .lb-formbox .form-head{ margin-bottom: 12px; }
-.lb-one .lb-formbox .form-title{
-  margin: 0 0 6px;
-  font-size: clamp(20px, 2.2vw, 26px);
-  line-height: 1.2;
-  color: var(--c-heading, currentColor);
-}
-.lb-one .lb-formbox .form-subtitle{
-  margin: 0 0 10px;
-  font-size: 0.98rem;
-  color: color-mix(in oklab, var(--form-text, currentColor) 80%, transparent);
+/* ===== Form Header Styling ===== */
+.lb-one .lb-formbox .form-head{ 
+  margin-bottom: 24px; 
+  text-align: center;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(0,0,0,.08);
 }
 
-/* GF tidy defaults */
-.lb-one .lb-formbox .gform_wrapper .gfield_label{ 
-  color: inherit; font-weight: 700; margin-bottom: 6px;
+.lb-one .lb-formbox .form-title{
+  margin: 0 0 12px;
+  font-size: clamp(28px, 3.2vw, 36px);
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--c-heading, #1a202c);
 }
+
+.lb-one .lb-formbox .form-subtitle{
+  margin: 0;
+  font-size: 1.15rem;
+  line-height: 1.4;
+  color: color-mix(in oklab, var(--form-text, #4a5568) 85%, transparent);
+}
+
+/* ===== Form Field Labels ===== */
+.lb-one .lb-formbox .gform_wrapper .gfield_label{ 
+  color: var(--form-text, #2d3748);
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-bottom: 8px;
+  display: block;
+  letter-spacing: 0.01em;
+}
+
 .lb-one .lb-formbox .gform_wrapper .gfield_description,
 .lb-one .lb-formbox .gform_wrapper .instruction{ 
-  color: color-mix(in oklab, var(--form-text, currentColor) 70%, transparent);
-  font-size: .95em;
+  color: color-mix(in oklab, var(--form-text, #718096) 75%, transparent);
+  font-size: .9rem;
+  line-height: 1.4;
+  margin-top: 4px;
 }
 
-/* Inputs */
+/* ===== Clean Input Styling - NO FOCUS EFFECTS ===== */
 .lb-one .lb-formbox .gform_wrapper input[type="text"],
 .lb-one .lb-formbox .gform_wrapper input[type="email"],
 .lb-one .lb-formbox .gform_wrapper input[type="tel"],
 .lb-one .lb-formbox .gform_wrapper input[type="number"],
 .lb-one .lb-formbox .gform_wrapper select,
 .lb-one .lb-formbox .gform_wrapper textarea{
-  width:100%;
-  border:1px solid rgba(0,0,0,.14);
-  border-radius:12px;
-  padding:12px 14px;
-  background:#fff;
-  color:#111;
-  box-shadow: inset 0 1px 1px rgba(0,0,0,.04);
+  width: 100%;
+  border: 2px solid rgba(0,0,0,.12);
+  border-radius: 14px;
+  padding: 14px 16px;
+  font-size: 1rem;
+  line-height: 1.4;
+  background: #fafafa;
+  color: #2d3748;
+  box-shadow: 
+    inset 0 1px 2px rgba(0,0,0,.06),
+    0 1px 1px rgba(255,255,255,.8);
 }
+
+/* Placeholder styling - fixes white on white issue */
+.lb-one .lb-formbox .gform_wrapper input::placeholder,
+.lb-one .lb-formbox .gform_wrapper textarea::placeholder{
+  color: #a0aec0;
+  opacity: 1;
+  font-weight: 400;
+}
+
+/* NO hover state - removed all transitions and effects */
 .lb-one .lb-formbox .gform_wrapper input:hover,
 .lb-one .lb-formbox .gform_wrapper select:hover,
 .lb-one .lb-formbox .gform_wrapper textarea:hover{
-  border-color: rgba(0,0,0,.22);
+  border-color: rgba(0,0,0,.12);
+  background: #fafafa;
+  box-shadow: 
+    inset 0 1px 2px rgba(0,0,0,.06),
+    0 1px 1px rgba(255,255,255,.8);
 }
+
+/* NO focus state - exactly the same as regular state */
 .lb-one .lb-formbox .gform_wrapper input:focus,
 .lb-one .lb-formbox .gform_wrapper select:focus,
 .lb-one .lb-formbox .gform_wrapper textarea:focus{
   outline: none;
-  border-color: var(--form-accent, #6ec0b0);
-  box-shadow: 0 0 0 3px color-mix(in oklab, var(--form-accent, #6ec0b0) 28%, transparent);
+  border-color: rgba(0,0,0,.12);
+  background: #fafafa;
+  box-shadow: 
+    inset 0 1px 2px rgba(0,0,0,.06),
+    0 1px 1px rgba(255,255,255,.8);
 }
 
-/* Spacing */
-.lb-one .lb-formbox .gform_wrapper .gfield{ margin-bottom: 14px; }
-.lb-one .lb-formbox .gform_wrapper .gform_body{ margin-bottom: 12px; }
+/* Field spacing */
+.lb-one .lb-formbox .gform_wrapper .gfield{ 
+  margin-bottom: 20px; 
+}
 
-/* Submit button */
+.lb-one .lb-formbox .gform_wrapper .gform_body{ 
+  margin-bottom: 20px; 
+}
+	  
+	  
+
+/* ===== Enhanced Submit Button ===== */
 .lb-one .lb-formbox .gform_wrapper .gform_button{
-  background: var(--form-accent, #6ec0b0);
-  color:#0f2f2a;
-  border:none; border-radius:12px;
-  padding:12px 16px; font-weight:700; cursor:pointer;
-  box-shadow: 0 2px 8px color-mix(in oklab, var(--form-accent, #6ec0b0) 45%, transparent);
-  transition: transform .06s ease, filter .2s ease;
+  width: 100%;
+  background: linear-gradient(135deg, 
+    var(--form-accent, #6ec0b0) 0%, 
+    color-mix(in oklab, var(--form-accent, #6ec0b0) 90%, #4fd1c7) 100%);
+  color: #0f2f2a;
+  border: none;
+  border-radius: 14px;
+  padding: 16px 24px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  
+  box-shadow: 
+    0 2px 4px color-mix(in oklab, var(--form-accent, #6ec0b0) 30%, transparent),
+    0 8px 16px color-mix(in oklab, var(--form-accent, #6ec0b0) 20%, transparent),
+    inset 0 1px 0 rgba(255,255,255,.2);
+  
+  transition: all 0.2s ease;
 }
+
+/* Button hover effect */
 .lb-one .lb-formbox .gform_wrapper .gform_button:hover{
-  filter: brightness(0.97);
+  transform: translateY(-2px);
+  box-shadow: 
+    0 4px 8px color-mix(in oklab, var(--form-accent, #6ec0b0) 35%, transparent),
+    0 12px 24px color-mix(in oklab, var(--form-accent, #6ec0b0) 25%, transparent),
+    inset 0 1px 0 rgba(255,255,255,.3);
 }
+
 .lb-one .lb-formbox .gform_wrapper .gform_button:active{
-  transform: translateY(1px);
+  transform: translateY(0px);
+  box-shadow: 
+    0 2px 4px color-mix(in oklab, var(--form-accent, #6ec0b0) 40%, transparent),
+    inset 0 1px 0 rgba(255,255,255,.1);
 }
 
-/* Note under the form */
+/* Button loading/shimmer effect */
+.lb-one .lb-formbox .gform_wrapper .gform_button::before{
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, 
+    transparent, 
+    rgba(255,255,255,.3), 
+    transparent);
+  transition: left 0.6s;
+}
+
+.lb-one .lb-formbox .gform_wrapper .gform_button:hover::before{
+  left: 100%;
+}
+
+/* ===== Clean Form Note Styling - CENTERED ===== */
 .lb-one .lb-formbox .form-note{ 
-  margin-top: 10px; font-size: .95em; 
-  color: color-mix(in oklab, var(--form-text, currentColor) 75%, transparent);
+  margin-top: 16px; 
+  padding: 12px 16px;
+  font-size: .9rem;
+  line-height: 1.5;
+  background: rgba(0,0,0,.02);
+  border-radius: 10px;
+  color: color-mix(in oklab, var(--form-text, #4a5568) 80%, transparent);
+  text-align: center;
 }
 
+/* ===== Clean Validation/Error Styling ===== */
+.lb-one .lb-formbox .gform_wrapper .validation_message{
+  color: #e53e3e;
+  font-size: .9rem;
+  margin-top: 6px;
+  padding: 8px 12px;
+  background: rgba(229, 62, 62, .08);
+  border-radius: 8px;
+}
+
+.lb-one .lb-formbox .gform_wrapper .gform_validation_errors{
+  background: rgba(229, 62, 62, .08);
+  border: 1px solid rgba(229, 62, 62, .2);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+  color: #e53e3e;
+}
+
+/* ===== Gravity Forms Confirmation Messages ===== */
+.lb-one .gform_confirmation_wrapper,
+.lb-one .gform_confirmation_message,
+.lb-one .gform_confirmation_message h3,
+.lb-one .gform_confirmation_message p,
+.lb-one .gform_confirmation_message div{
+  color: color-mix(in oklab, var(--form-text, #4a5568) 80%, transparent) !important;
+}
+
+.lb-one .gform_confirmation_message{
+  text-align: center;
+  padding: 16px;
+  background: rgba(0,0,0,.02);
+  border-radius: 10px;
+  margin-top: 16px;
+  font-size: .95rem;
+  line-height: 1.5;
+}
+
+.lb-one .gform_confirmation_message h3{
+  margin: 0 0 8px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+	  
+	  /* ==== Unified text colors (ACF-driven) ==== */
+/* Eyebrow uses brand green by default unless overridden via ACF */
+.lb-one .eyebrow{
+  color: var(--c-eyebrow, #6ec0b0);
+}
+
+/* Let ACF heading/text colors apply to BOTH variants.
+   If no ACF color set, we fall back to theme/inherited color. */
+.lb-one h1{
+  color: var(--c-heading, inherit);
+}
+.lb-one .lead{
+  color: var(--c-text, inherit);
+}
+
+/* The old variant-specific color rules can stay; these will simply
+   override when ACF colors are provided. If you prefer, remove the
+   older variant color lines to avoid confusion. */
+
+
+/* ==== Constrain copy width + add side padding when centered ==== */
+/* Full variant */
+.lb-one.var-full .lb-copy{
+  max-width: var(--copy-max, 840px);
+  padding-inline: var(--copy-pad, 24px);
+}
+
+/* Respect alignment settings */
+.lb-one.var-full.align-center .lb-copy{ margin-inline: auto; text-align: center; }
+.lb-one.var-full.align-left  .lb-copy{ margin-inline: 0 auto 0 0; text-align: left; }
+.lb-one.var-full.align-right .lb-copy{ margin-inline: 0 0 0 auto; text-align: right; }
+
+/* Split variant — allow a centered, bounded copy too */
+.lb-one.var-split.align-center .split-copy{
+  max-width: var(--copy-max, 840px);
+  padding-inline: var(--copy-pad, 24px);
+  margin-inline: auto;
+  text-align: center;
+}
+
+	  
+	  
+/* On roomy screens you can optionally bump it a hair */
+@media (min-width: 1200px){
+  .lb-one.var-full .lb-copy,
+  .lb-one.var-split.align-center .split-copy{
+    max-width: calc(var(--copy-max, 840px) + 40px);
+  }
+}
+
+
+/* ===== Mobile Responsiveness ===== */
+@media (max-width: 768px){
+  .lb-one .lb-formbox{
+    padding: var(--form-pad, 24px);
+    margin-top: 20px;
+    max-width: calc(100vw - 32px); /* Ensure mobile doesn't overflow */
+  }
+  
+  .lb-one .lb-formbox .form-head{
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+  }
+  
+  .lb-one .lb-formbox .form-title{
+    font-size: clamp(20px, 5vw, 24px);
+  }
+  
+  .lb-one .lb-formbox .gform_wrapper input,
+  .lb-one .lb-formbox .gform_wrapper select,
+  .lb-one .lb-formbox .gform_wrapper textarea{
+    padding: 12px 14px;
+  }
+  
+  .lb-one .lb-formbox .gform_wrapper .gform_button{
+    padding: 14px 20px;
+    font-size: 1rem;
+  }
+}
 
 
 /* Mobile stacking - IMPORTANT: This overrides desktop layout */
@@ -479,10 +675,68 @@ if (!defined('LB_ONE_CSS')) {
 	  
 	  
 	  
+@media (max-width:900px){
+  .lb-one[data-aspect="fixed"] .lb-media{ height: var(--h-mobile, 360px); }
+  
+  /* Dynamic mobile sizing based on typical mobile image ratios */
+  .lb-one.var-split .lb-media{ 
+    height: 95vw !important; /* Responsive height */
+    min-height: 300px;
+    max-height: 600px;
+  }
+  
+  /* For full-width hero images on mobile */
+  .lb-one.var-full .lb-media{
+    height: 60vh !important; /* 60% of viewport height */
+    min-height: 400px;
+    max-height: 1000px;
+  }
+  
+  /* Override ACF fit modes on mobile - force cover for better appearance */
+  .lb-one[data-fit="cover"] .lb-media img,
+  .lb-one[data-fit="contain"] .lb-media img{
+    object-fit: cover !important;
+    width: 100%;
+    height: 100%;
+  }
+  
+  /* Remove any background color that might show with contain mode */
+  .lb-one[data-fit="contain"] .lb-media img{
+    background: transparent !important;
+  }
+}
+	  @media (max-width: 480px){
+  /* Smaller phones get slightly reduced heights */
+  .lb-one.var-split .lb-media{ 
+    height: 90vw !important; /* Dynamic height for small phones */
+    min-height: 280px;
+    max-height: 1080px;
+  }
+  
+  .lb-one.var-full .lb-media{
+    height: 50vh !important;
+    min-height: 320px;
+    max-height: 1000px;
+  }
+  
+  /* Force cover mode on small screens regardless of ACF setting */
+  .lb-one[data-fit="cover"] .lb-media img,
+  .lb-one[data-fit="contain"] .lb-media img{
+    object-fit: cover !important;
+  }
+}
+	  
+	  
+	  
 	  /* Slightly larger gutters on roomy screens (optional) */
 @media (min-width: 1200px){
   .lb-one.var-split .lb-container { padding-inline: 32px; }
 }
+	  
+
+
+	  
+	  
   </style>
 <?php } // end one-time CSS ?>
 
